@@ -1,13 +1,43 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:videshi/navigation.dart';
 import 'package:videshi/screens/auth/ForgotPasswordScreen.dart';
+import 'package:videshi/screens/auth/SignUpScreen.dart';
 
-import 'SignUpScreen.dart';
+import '../../services/authservices.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final AuthService authService = AuthService();
+  bool isLoading = false;
+
+  void _handleLogin() async {
+    setState(() => isLoading = true);
+
+    final response = await authService.login(
+      email: emailController.text.trim(),
+      password: passwordController.text.trim(),
+    );
+
+    setState(() => isLoading = false);
+
+    if (response['success']) {
+      Get.offAll(() => NavigationScreen()); // Navigate to home screen
+    } else {
+      Get.snackbar("Login Failed", response['error'],
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,11 +47,9 @@ class LoginScreen extends StatelessWidget {
         color: Colors.white,
         child: Stack(
           children: [
-            // App Logo Positioned
             Positioned(
               left: 153,
               top: 72,
-
               child: Image.asset(
                 'assets/images/logo/logo.png',
                 width: 79,
@@ -29,8 +57,6 @@ class LoginScreen extends StatelessWidget {
                 fit: BoxFit.contain,
               ),
             ),
-
-            // App Name "Videshi"
             Positioned(
               left: 151,
               top: 137,
@@ -45,8 +71,6 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
             ),
-
-            // "LOGIN" Title
             Positioned(
               left: 142,
               top: 188,
@@ -61,11 +85,43 @@ class LoginScreen extends StatelessWidget {
               ),
             ),
 
-            // Email Field
-            _buildInputField("Email", "Enter your email", 264, 290),
+            // Email Input
+            Positioned(
+              left: 52,
+              top: 264,
+              child: SizedBox(
+                width: 287,
+                child: TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: "Email",
+                    hintText: "Enter your email",
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(13)),
+                  ),
+                ),
+              ),
+            ),
 
-            // Password Field
-            _buildInputField("Password", "Enter your password", 354, 380),
+            // Password Input
+            Positioned(
+              left: 52,
+              top: 354,
+              child: SizedBox(
+                width: 287,
+                child: TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    hintText: "Enter your password",
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(13)),
+                  ),
+                ),
+              ),
+            ),
 
             // Forgot Password
             Positioned(
@@ -73,12 +129,7 @@ class LoginScreen extends StatelessWidget {
               top: 431,
               child: GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ForgotPasswordScreen(),
-                    ), // Navigate to SignUp
-                  );
+                  Get.to(() => ForgotPasswordScreen());
                 },
                 child: Text(
                   'Forgot password?',
@@ -97,70 +148,28 @@ class LoginScreen extends StatelessWidget {
               left: 52,
               top: 472,
               child: GestureDetector(
-                onTap: () {
-                  Get.to(() => NavigationScreen());
-                },
+                onTap: isLoading ? null : _handleLogin,
                 child: Container(
                   width: 287,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Color(0xFF1A4670),
+                    color: isLoading ? Colors.grey : Color(0xFF1A4670),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Center(
-                    child: Text(
-                      'Login',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    child: isLoading
+                        ? CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                            'Login',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                   ),
                 ),
               ),
-            ),
-
-            // "Or Sign In" Text
-            Positioned(
-              left: 107,
-              top: 560,
-              child: SizedBox(
-                width: 189,
-                height: 41,
-                child: RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: GoogleFonts.roboto(
-                      color: Color(0xC1535353),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      height: 1.5,
-                    ),
-                    children: const [
-                      TextSpan(text: ' Or\n'),
-                      TextSpan(
-                        text: 'Sign In',
-                        style: TextStyle(color: Colors.black),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Google Sign-In Button
-            _buildSocialButton(
-              imagePath: "assets/images/logo/google.jfif",
-              text: "Sign in using Google account",
-              top: 642,
-            ),
-
-            // Facebook Sign-In Button
-            _buildSocialButton(
-              imagePath: "assets/images/logo/fb.png",
-              text: "Sign in using Facebook account",
-              top: 701,
             ),
 
             // Sign Up Text
@@ -179,18 +188,13 @@ class LoginScreen extends StatelessWidget {
               ),
             ),
 
-            // Sign Up Button (Now Clickable)
+            // Sign Up Button
             Positioned(
               left: 242,
               top: 785,
               child: GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SignUpScreen(),
-                    ), // Navigate to SignUp
-                  );
+                  Get.to(() => SignUpScreen());
                 },
                 child: Text(
                   'Sign Up',
@@ -201,90 +205,6 @@ class LoginScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Helper Method: Builds Input Field Containers
-  Widget _buildInputField(
-    String label,
-    String hint,
-    double labelTop,
-    double fieldTop,
-  ) {
-    return Stack(
-      children: [
-        Positioned(
-          left: 52,
-          top: fieldTop,
-          child: Container(
-            width: 287,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(),
-              borderRadius: BorderRadius.circular(13),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 51,
-          top: labelTop,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Roboto',
-            ),
-          ),
-        ),
-        Positioned(
-          left: 59,
-          top: fieldTop + 16,
-          child: Text(
-            hint,
-            style: TextStyle(
-              color: Color(0xFF848688),
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Roboto',
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Helper Method: Builds Social Login Buttons
-  Widget _buildSocialButton({
-    required String imagePath,
-    required String text,
-    required double top,
-  }) {
-    return Positioned(
-      left: 52,
-      top: top,
-      child: Container(
-        width: 287,
-        height: 36,
-        decoration: BoxDecoration(color: Colors.white, border: Border.all()),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(imagePath, width: 35, height: 22),
-            SizedBox(width: 10),
-            Text(
-              text,
-              style: GoogleFonts.albertSans(
-                color: Color(0xFF848688),
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
               ),
             ),
           ],
